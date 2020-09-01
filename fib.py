@@ -41,8 +41,7 @@ def fibonacci4(n):
 
 def time_count(func,k):
     start = time.time()
-    for i in range(0,30):
-        func(n=i)
+    func(n=30)
     elapsed_time = time.time() - start
     print ("fibonacci"+str(k)+" elapsed_time:{0}".format(elapsed_time) + "[sec]")
 
