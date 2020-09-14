@@ -70,6 +70,22 @@ class Maze:
         self._grid[self.goal.row][self.goal.column] = Cell.GOAL
 
 
+def euclidean_distance(goal):
+    def distance(ml):
+        xdist = ml.column - goal.column
+        ydis = ml.row - goal.row
+        return sqrt((xdist*xdist) + (ydist*ydist))
+    return distance
+
+
+def manhattan_distance(goal):
+    def distance(ml):
+        xdist = abs(ml.column - goal.column)
+        ydist = abs(ml.row - goal.row)
+        return (xdist + ydist)
+    return distance
+
+
 if __name__ == "__main__":
     m = Maze()
     print(m)
@@ -81,3 +97,25 @@ if __name__ == "__main__":
         m.mark(path1)
         print(m)
         m.clear(path1)
+    
+    m = Maze()
+    print(m)
+    solution2 = bfs(m.start, m.goal_test, m.successors)
+    if solution2 is None:
+        print("No solution found using bfs")
+    else:
+        path2 = node_to_path(solution2)
+        m.mark(path2)
+        print(m)
+        m.clear(path2)
+
+    m = Maze()
+    distance = manhattan_distance(m.goal)
+    solution3 = astar(m.start, m.goal_test, m.successors, distance)
+    if solution3 is None:
+        print("No solution found using bfs")
+    else:
+        path3 = node_to_path(solution3)
+        m.mark(path3)
+        print(m)
+        m.clear(path3)
