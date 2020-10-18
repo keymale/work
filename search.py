@@ -14,7 +14,6 @@ for i in T:
         if mi > ma:
             break
         elif i == S[m]:
-            print(i)
             ans += 1
             break
         elif i < S[m]:
