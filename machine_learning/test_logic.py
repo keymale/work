@@ -9,7 +9,7 @@ def cross_entropy(y, t):
     return L
 
 
-class neuron():
+class Neuron():
     '''
     u_s_j:s番目の入力ベクトルx‗sに対する、隠れ層j番目のニューロン活性
     y_s_j:s番目の入力ベクトルx‗sに対する、隠れ層j番目のニューロン出力
@@ -30,7 +30,7 @@ class neuron():
         self.N = len(t)
         self.b = np.random.randn(1)[0]
 
-    def sigmoid(self):
+    def activation(self):
         return 1/(1 + math.e**(-self.u))
 
     def dLdw(self):
@@ -42,7 +42,7 @@ class neuron():
     def spark(self, x):
         self.x = x
         self.u = np.dot(self.x, self.w) + self.b
-        self.y = self.sigmoid()
+        self.y = self.activation()
         return self.y
 
     def adam(self, dLdw):
@@ -59,8 +59,8 @@ class neuron():
         self.b = self.b - (self.eta * self.dLdb())        
 
 
-class hidden_neuron(neuron):
-    def ReLU(self):
+class HiddenNeuron(Neuron):
+    def activation(self):
         return np.where(self.u <= 0, 0, self.u)
 
     def dReLU(self):
@@ -74,48 +74,79 @@ class hidden_neuron(neuron):
         sigma_s = self.y - self.t
         return (1 / self.N)*np.sum(sigma_s * wj * self.dReLU())
 
-    def spark(self, x):
-        self.x = x
-        self.u = np.dot(self.x, self.w) + self.b
-        self.y = self.ReLU()
-        return self.y
-
     def rev_wb(self, wj):
         #self.w = (1 - eta * alpha) * self.w - (eta * self.dLdw(wj))
         self.adam(self.dLdw(wj))
-        self.b = self.b - (eta * self.dLdb(wj))
+        self.b = self.b - (self.eta * self.dLdb(wj))
 
+
+class NeuronMulti(Neuron):
+    def activation(self):
+        return math.e**(self.x) / (np.sum(math.e**(self.x))
+
+    def dLdw(self):
+        self.sigma_sk = self.y - self.t
+        return (1 / self.N) * np.dot(self.sigma_sk, self.y)
+
+    def dLdb(self):
+        return (1 / self.N)*np.sum(self.sigma_sk))
+
+
+class HiddenNeuronMulti(HiddenNeuron):
+    def dLdw(self, wj):
+        sigma_s = self.y - self.t
+        return (1 / self.N) * np.dot(sigma_s * wj * self.dReLU(),x)
+
+    def dLdb(self, wj):
+        sigma_s = self.y - self.t
+        return (1 / self.N)*np.sum(sigma_s * wj * self.dReLU())
+
+
+class NN1Output():
+    def __init__(self, x, t, epoc, hidden_num = 16):
+        self.hidden_num = hidden_num
+        self.neuron_hid = [[] for _ in range(self.hidden_num)]
+        self.x = x
+        self.y = [[] for _ in range(self.hidden_num)]    
+        self.t = t
+        self.epoc = epoc
+        self.ans_len = len(self.x)
+        self.x_len = len(self.x[0])
+        self.loss = []
+        self.ans  = [[]for _ in range(self.ans_len)]
+        for i in range(self.hidden_num):
+            self.neuron_hid[i] = HiddenNeuron(np.random.randn(self.x_len), self.t)
+        self.neuron_out = Neuron(np.random.randn(self.hidden_num), t)
+
+    def study(self):
+        fig, ax = plt.subplots(1, 1)
+        
+        for i in range(self.epoc):
+            for j in range(self.hidden_num):
+                self.y[j] = self.neuron_hid[j].spark(self.x)
+            self.yo = self.neuron_out.spark(np.stack([self.y[j]for j in range(self.hidden_num)], 1))
+            for j in range(self.hidden_num):
+                self.neuron_hid[j].rev_wb(self.neuron_out.w[j])
+            self.neuron_out.rev_wb()
+            for k in range(self.ans_len):
+                self.ans[k].append(self.yo[k])
+            self.loss.append(np.sum(np.abs(self.yo - self.t)))
+            if i % 100 == 0:
+                line, = ax.plot(list(range(i+1)), self.loss,color = "blue")
+                plt.pause(1e-9)
+                line.remove()
+        plt.plot(list(range(i+1)), self.loss,color = "blue")
+        plt.show()
+            
 
 
 if __name__ == "__main__":
-    eta = 0.001
-    epoc = 10000
-    hidden_num = 16
     x = np.array(((0, 0),
          (0, 1),
          (1, 0),
          (1, 1)))
     t = np.array((0, 1, 1, 0))
-    neuron_hid = [[] for _ in range(hidden_num)]
-    y = [[] for _ in range(hidden_num)]    
-    ans  = [[], [], [], []]
-    for i in range(hidden_num):
-        neuron_hid[i] = hidden_neuron(np.random.randn(2), t)
-    neuron_out = neuron(np.random.randn(hidden_num), t)
-
-    for i in range(epoc):
-        for j in range(hidden_num):
-            y[j] = neuron_hid[j].spark(x)
-        yo = neuron_out.spark(np.stack([y[j]for j in range(hidden_num)], 1))
-        for j in range(hidden_num):
-            neuron_hid[j].rev_wb(neuron_out.w[j])
-        neuron_out.rev_wb()
-        for i in range(4):
-            ans[i].append(yo[i])
-    cnt = list(range(epoc))
-    plt.plot(cnt,ans[0],label = "0")
-    plt.plot(cnt,ans[1],label = "1")
-    plt.plot(cnt,ans[2],label = "2")
-    plt.plot(cnt,ans[3],label = "3") 
-    plt.legend()       
-    plt.show()
+    epoc = 10000
+    hidden_num = 16
+    nn1out = NN1Output(x, t, epoc, hidden_num = 16)
+    nn1out.study()
